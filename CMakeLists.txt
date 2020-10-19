@@ -102,10 +102,12 @@ if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui.h)
     # CMakeLists.txt is in root directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
     set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples)
+    set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends)
 else ()
     # CMakeLists.txt is in examples directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
     set (IMGUI_EXAMPLES_DIR ${CMAKE_CURRENT_LIST_DIR})
+    set (IMGUI_BACKENDS_DIR ${CMAKE_CURRENT_LIST_DIR}/../backends)
 endif ()
 
 # Set up main library
@@ -205,10 +207,10 @@ if (IMGUI_IMPL_SDL)
     if (TARGET ${IMGUI_SDL_TARGET} OR CMAKE_SYSTEM_NAME STREQUAL Emscripten)
         add_library (imgui-sdl INTERFACE)
         target_sources(imgui-sdl INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_sdl.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_sdl.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl.cpp
         )
-        target_include_directories(imgui-sdl INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-sdl INTERFACE ${IMGUI_BACKENDS_DIR})
         target_link_libraries(imgui-sdl INTERFACE imgui)
         if (TARGET ${IMGUI_SDL_TARGET})
             target_link_libraries(imgui-sdl INTERFACE ${IMGUI_SDL_TARGET})
@@ -220,30 +222,30 @@ endif ()
 if (IMGUI_IMPL_METAL AND APPLE)
     add_library(imgui-metal INTERFACE)
     target_sources(imgui-metal INTERFACE
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_metal.h
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_metal.mm
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_metal.h
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_metal.mm
     )
     target_link_libraries(imgui-metal INTERFACE imgui "-framework Cocoa" "-framework Metal" "-framework QuartzCore")
     target_compile_options(imgui-metal INTERFACE -fobjc-arc)
-    target_include_directories(imgui-metal INTERFACE ${IMGUI_EXAMPLES_DIR})
+    target_include_directories(imgui-metal INTERFACE ${IMGUI_BACKENDS_DIR})
 endif ()
 if (IMGUI_IMPL_OSX AND APPLE)
     add_library(imgui-osx INTERFACE)
     target_sources(imgui-osx INTERFACE
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_osx.h
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_osx.mm
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_osx.h
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_osx.mm
     )
     target_link_libraries(imgui-osx INTERFACE imgui "-framework Cocoa" "-framework AppKit")
     target_compile_options(imgui-osx INTERFACE -fobjc-arc)
-    target_include_directories(imgui-osx INTERFACE ${IMGUI_EXAMPLES_DIR})
+    target_include_directories(imgui-osx INTERFACE ${IMGUI_BACKENDS_DIR})
 endif ()
 if (IMGUI_IMPL_WIN32 AND WIN32)
     add_library(imgui-win32 INTERFACE)
     target_sources(imgui-win32 INTERFACE
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_win32.h
-        ${IMGUI_EXAMPLES_DIR}/imgui_impl_win32.cpp
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_win32.h
+        ${IMGUI_BACKENDS_DIR}/imgui_impl_win32.cpp
     )
-    target_include_directories(imgui-win32 INTERFACE ${IMGUI_EXAMPLES_DIR})
+    target_include_directories(imgui-win32 INTERFACE ${IMGUI_BACKENDS_DIR})
 endif ()
 if (IMGUI_IMPL_GLFW)
     if (IMGUI_GLFW_TARGET)
@@ -284,11 +286,11 @@ if (IMGUI_IMPL_GLFW)
     if (TARGET ${IMGUI_GLFW_TARGET})
         add_library(imgui-glfw INTERFACE)
         target_sources(imgui-glfw INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_glfw.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_glfw.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_glfw.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_glfw.cpp
         )
         target_link_libraries(imgui-glfw INTERFACE ${CMAKE_DL_LIBS} ${IMGUI_GLFW_TARGET})
-        target_include_directories(imgui-glfw INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-glfw INTERFACE ${IMGUI_BACKENDS_DIR})
     else ()
         message(STATUS "IMGUI_IMPL_GLFW set to ON but GLFW could not be found.")
     endif ()
@@ -307,19 +309,19 @@ if (IMGUI_IMPL_OPENGL2 OR IMGUI_IMPL_OPENGL3)
     endif ()
     if (IMGUI_IMPL_OPENGL2)
         add_library(imgui-opengl2 INTERFACE)
-        target_sources(imgui-opengl2 INTERFACE ${IMGUI_EXAMPLES_DIR}/imgui_impl_opengl2.cpp)
+        target_sources(imgui-opengl2 INTERFACE ${IMGUI_BACKENDS_DIR}/imgui_impl_opengl2.cpp)
         target_link_libraries (imgui-opengl2 INTERFACE imgui OpenGL::GL)
-        target_include_directories(imgui-opengl2 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-opengl2 INTERFACE ${IMGUI_BACKENDS_DIR})
     endif ()
     if (IMGUI_IMPL_OPENGL3)
         add_library(imgui-opengl3 INTERFACE)
-        target_sources(imgui-opengl3 INTERFACE ${IMGUI_EXAMPLES_DIR}/imgui_impl_opengl3.cpp)
+        target_sources(imgui-opengl3 INTERFACE ${IMGUI_BACKENDS_DIR}/imgui_impl_opengl3.cpp)
         if (TARGET imgui-gl3w)
             # OpenGL3 target is built with emscripten, but gl3w is not required.
             target_link_libraries (imgui-opengl3 INTERFACE imgui-gl3w)
         endif ()
         target_link_libraries (imgui-opengl3 INTERFACE imgui OpenGL::GL)
-        target_include_directories(imgui-opengl3 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-opengl3 INTERFACE ${IMGUI_BACKENDS_DIR})
     endif ()
 endif ()
 if (IMGUI_IMPL_GLUT)
@@ -327,14 +329,14 @@ if (IMGUI_IMPL_GLUT)
     if (GLUT_glut_LIBRARY OR IMGUI_GLUT_TARGET)
         add_library(imgui-glut INTERFACE)
         target_sources(imgui-glut INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_glut.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_glut.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_glut.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_glut.cpp
         )
         target_link_libraries(imgui-glut INTERFACE imgui)
         if (IMGUI_GLUT_TARGET)
             target_link_libraries(imgui-glut INTERFACE ${IMGUI_GLUT_TARGET})
         else ()
-            target_include_directories(imgui-glut INTERFACE ${GLUT_INCLUDE_DIR} ${IMGUI_EXAMPLES_DIR})
+            target_include_directories(imgui-glut INTERFACE ${GLUT_INCLUDE_DIR} ${IMGUI_BACKENDS_DIR})
             target_link_libraries(imgui-glut INTERFACE imgui ${GLUT_glut_LIBRARY})
             if (APPLE)
                 target_link_libraries(imgui-glut INTERFACE ${GLUT_cocoa_LIBRARY})
@@ -349,11 +351,11 @@ if (IMGUI_IMPL_DX9)
     if (HAS_D3D9)
         add_library(imgui-dx9 INTERFACE)
         target_sources(imgui-dx9 INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx9.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx9.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx9.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx9.cpp
         )
         target_link_libraries(imgui-dx9 INTERFACE imgui d3d9)
-        target_include_directories(imgui-dx9 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-dx9 INTERFACE ${IMGUI_BACKENDS_DIR})
     else ()
         message (STATUS "IMGUI_IMPL_DX9 set to ON but DirectX 9 could not be found.")
     endif ()
@@ -363,11 +365,11 @@ if (IMGUI_IMPL_DX10)
     if (HAS_D3D10)
         add_library(imgui-dx10 INTERFACE)
         target_sources(imgui-dx10 INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx10.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx10.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx10.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx10.cpp
         )
         target_link_libraries(imgui-dx10 INTERFACE imgui d3d10)
-        target_include_directories(imgui-dx10 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-dx10 INTERFACE ${IMGUI_BACKENDS_DIR})
     else ()
         message (STATUS "IMGUI_IMPL_DX10 set to ON but DirectX 10 could not be found.")
     endif ()
@@ -377,11 +379,11 @@ if (IMGUI_IMPL_DX11)
     if (HAS_D3D11)
         add_library(imgui-dx11 INTERFACE)
         target_sources(imgui-dx11 INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx11.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx11.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx11.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx11.cpp
         )
         target_link_libraries(imgui-dx11 INTERFACE imgui d3d11)
-        target_include_directories(imgui-dx11 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-dx11 INTERFACE ${IMGUI_BACKENDS_DIR})
     else ()
         message (STATUS "IMGUI_IMPL_DX11 set to ON but DirectX 11 could not be found.")
     endif ()
@@ -391,11 +393,11 @@ if (IMGUI_IMPL_DX12)
     if (HAS_D3D11)
         add_library(imgui-dx12 INTERFACE)
         target_sources(imgui-dx12 INTERFACE
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx12.h
-            ${IMGUI_EXAMPLES_DIR}/imgui_impl_dx12.cpp
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx12.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_dx12.cpp
         )
         target_link_libraries(imgui-dx12 INTERFACE imgui d3d12 dxgi)
-        target_include_directories(imgui-dx12 INTERFACE ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-dx12 INTERFACE ${IMGUI_BACKENDS_DIR})
     else ()
         message (STATUS "IMGUI_IMPL_DX12 set to ON but DirectX 12 could not be found.")
     endif ()
@@ -404,9 +406,9 @@ if (IMGUI_IMPL_VULKAN)
     find_package(Vulkan QUIET)
     if (Vulkan_FOUND)
         add_library(imgui-vulkan INTERFACE)
-        target_sources(imgui-vulkan INTERFACE ${IMGUI_EXAMPLES_DIR}/imgui_impl_vulkan.cpp)
+        target_sources(imgui-vulkan INTERFACE ${IMGUI_BACKENDS_DIR}/imgui_impl_vulkan.cpp)
         target_link_libraries (imgui-vulkan INTERFACE imgui ${Vulkan_LIBRARIES} OpenGL::GL)
-        target_include_directories(imgui-vulkan INTERFACE ${Vulkan_INCLUDE_DIRS} ${IMGUI_EXAMPLES_DIR})
+        target_include_directories(imgui-vulkan INTERFACE ${Vulkan_INCLUDE_DIRS} ${IMGUI_BACKENDS_DIR})
     else ()
         message(STATUS "IMGUI_IMPL_VULKAN set to ON but Vulkan could not be found.")
     endif ()
