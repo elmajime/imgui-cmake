@@ -112,7 +112,7 @@ endif ()
 
 # Set up main library
 add_library(imgui ${IMGUI_ROOT_DIR}/imgui.h ${IMGUI_ROOT_DIR}/imgui_internal.h ${IMGUI_ROOT_DIR}/imgui.cpp
-    ${IMGUI_ROOT_DIR}/imgui_draw.cpp ${IMGUI_ROOT_DIR}/imgui_widgets.cpp
+    ${IMGUI_ROOT_DIR}/imgui_draw.cpp ${IMGUI_ROOT_DIR}/imgui_widgets.cpp ${IMGUI_ROOT_DIR}/imgui_tables.cpp 
 )
 if (IMGUI_DEMO)
     target_sources(imgui PRIVATE ${IMGUI_ROOT_DIR}/imgui_demo.cpp)
