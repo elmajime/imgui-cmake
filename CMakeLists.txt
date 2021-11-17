@@ -111,8 +111,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wunused-parameter -Wformat $<$<COMPILE_LANGUAGE:CXX>:-pedantic> -Wnarrowing)
 endif ()
 
+# These warnings are overzealous in GCC and only practical to use with Clang.
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # These warnings are overzealous in GCC and only practical to use with Clang.
     add_compile_options(-Wsign-conversion -Wshadow)
 endif ()
 
@@ -352,8 +352,7 @@ if (IMGUI_IMPL_GLFW)
     endif ()
 endif ()
 if (IMGUI_IMPL_OPENGL2 OR IMGUI_IMPL_OPENGL3)
-    # OpenGL. GLVND is vendor-agnostic OpenGL dispatch library on Linux.
-    set(OpenGL_GL_PREFERENCE "GLVND")
+    set(OpenGL_GL_PREFERENCE "GLVND")   # GLVND is vendor-agnostic OpenGL dispatch library on Linux.
     include(FindOpenGL)
     if (NOT OPENGL_FOUND)
         message(FATAL_ERROR "IMGUI_IMPL_OPENGL2 or IMGUI_IMPL_OPENGL3 set to ON but OpenGL could not be found.")
