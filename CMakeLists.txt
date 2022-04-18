@@ -46,6 +46,7 @@
 #   imgui-dx10: graphics backend for Windows using DirectX 10 graphics API.
 #   imgui-dx11: graphics backend for Windows using DirectX 11 graphics API.
 #   imgui-dx12: graphics backend for Windows using DirectX 12 graphics API.
+#   imgui-sdlrenderer: graphics backend for platforms supported by SDL.
 #
 cmake_minimum_required (VERSION 3.13)
 project (imgui)
@@ -65,6 +66,8 @@ option(IMGUI_DISABLE_FILE_FUNCTIONS "Disable use of file functions" OFF)
 option(IMGUI_ENABLE_STDLIB_SUPPORT "Enable extra functions taking stdlib types" OFF)
 option(IMGUI_ENABLE_COVERAGE "Enable coverage testing for supported compilers" OFF)
 option(IMGUI_ENABLE_ASAN "Enable compiler-based sanitizers" OFF)
+option(IMGUI_ENABLE_TRACY "Enable tracy profiling" OFF)
+option(IMGUI_ENABLE_FREETYPE "Enable FreeType font rasterizer" ON)
 option(IMGUI_IMPL_SDL "Build the SDL implementation (only if supported)" ON)
 option(IMGUI_IMPL_METAL "Build the Metal implementation (only if supported)" ${APPLE})
 option(IMGUI_IMPL_OSX "Build the OSX implementation (only if supported)" ${APPLE})
@@ -103,7 +106,7 @@ endif ()
 
 # Minimal supported C++ standard.
 if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set (CMAKE_CXX_STANDARD 98)
+    set (CMAKE_CXX_STANDARD 11)
 endif ()
 
 # Warnings.
@@ -137,61 +140,66 @@ else ()
     set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/../misc)
 endif ()
 
-# Set up main library
+# Set up main library. It is created as an INTERFACE library because it allows using different
+# IMGUI_USER_CONFIG defines in different targets of downstream projects.
 file(GLOB IMGUI_SOURCE_FILES ${IMGUI_ROOT_DIR}/*.h ${IMGUI_ROOT_DIR}/*.cpp)
 if (NOT IMGUI_DEMO)
     list(REMOVE IMGUI_SOURCE_FILES ${IMGUI_ROOT_DIR}/imgui_demo.cpp)
 endif ()
-add_library(imgui STATIC ${IMGUI_SOURCE_FILES})
+add_library(imgui INTERFACE)
+target_link_libraries(imgui INTERFACE ${CMAKE_DL_LIBS})
+target_sources(imgui INTERFACE ${IMGUI_SOURCE_FILES})
 if (IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
-    target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1)
+    target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1)
 endif ()
 if (IMGUI_DISABLE_FILE_FUNCTIONS)
-    target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_FILE_FUNCTIONS=1)
+    target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_FILE_FUNCTIONS=1)
 endif ()
 if (IMGUI_USER_CONFIG)
-    target_compile_definitions(imgui PUBLIC "-DIMGUI_USER_CONFIG=<${IMGUI_USER_CONFIG}>")
+    target_compile_definitions(imgui INTERFACE "-DIMGUI_USER_CONFIG=<${IMGUI_USER_CONFIG}>")
 endif ()
-target_include_directories(imgui PUBLIC ${IMGUI_ROOT_DIR})
+target_include_directories(imgui INTERFACE ${IMGUI_ROOT_DIR})
 if (NOT IMGUI_DEMO)
-    target_compile_definitions(imgui PUBLIC -DIMGUI_DISABLE_DEMO_WINDOWS=1)
+    target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_DEMO_WINDOWS=1)
 endif ()
 if (IMGUI_ENABLE_STDLIB_SUPPORT)
-    target_include_directories(imgui PUBLIC misc/cpp)
+    target_include_directories(imgui INTERFACE misc/cpp)
     target_sources(imgui PRIVATE misc/cpp/imgui_stdlib.h misc/cpp/imgui_stdlib.cpp)
 endif ()
 if (IMGUI_ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(imgui PUBLIC -fprofile-arcs -ftest-coverage)
-    target_link_libraries(imgui PUBLIC -fprofile-arcs -ftest-coverage)
-    target_link_libraries(imgui PUBLIC gcov)
+    target_compile_options(imgui INTERFACE -fprofile-arcs -ftest-coverage)
+    target_link_libraries(imgui INTERFACE -fprofile-arcs -ftest-coverage)
+    target_link_libraries(imgui INTERFACE gcov)
 endif ()
 
 if (IMGUI_ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(imgui PUBLIC -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls)
-    target_link_libraries(imgui PUBLIC -g -fsanitize=address)
+    target_compile_options(imgui INTERFACE -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+    target_link_libraries(imgui INTERFACE -g -fsanitize=address)
 endif ()
 
 ###############################################################################
 # Freetype
 ###############################################################################
-find_package(Freetype)
-if (FREETYPE_FOUND)
+if (IMGUI_ENABLE_FREETYPE)
     add_library(imgui-freetype INTERFACE)
     target_sources(imgui-freetype INTERFACE
         ${IMGUI_MISC_DIR}/freetype/imgui_freetype.h
         ${IMGUI_MISC_DIR}/freetype/imgui_freetype.cpp
     )
 
-    if (FALSE)
+    find_package(Freetype)
+    if (FREETYPE_FOUND)
         target_include_directories(imgui-freetype INTERFACE ${FREETYPE_INCLUDE_DIRS})
         target_link_libraries(imgui-freetype INTERFACE ${FREETYPE_LIBRARIES})
-    else ()
+    elseif (EXISTS ../freetype)
         set (SKIP_INSTALL_ALL ON)
         add_subdirectory(../freetype ${CMAKE_BINARY_DIR}/freetype)
         target_link_libraries(imgui-freetype INTERFACE freetype)
+    else ()
+        message(FATAL_ERROR "IMGUI_ENABLE_FREETYPE but FreeType was not found.")
     endif ()
     target_compile_definitions(imgui-freetype INTERFACE -DIMGUI_ENABLE_FREETYPE=1)
-    target_link_libraries(imgui PRIVATE imgui-freetype)
+    target_link_libraries(imgui INTERFACE imgui-freetype)
 endif()
 
 ###############################################################################
@@ -202,6 +210,19 @@ target_sources(imgui-stdlib INTERFACE
     ${IMGUI_MISC_DIR}/cpp/imgui_stdlib.h
     ${IMGUI_MISC_DIR}/cpp/imgui_stdlib.cpp
 )
+
+###############################################################################
+# Tracy
+###############################################################################
+if (IMGUI_ENABLE_TRACY AND EXISTS ${IMGUI_ROOT_DIR}/../tracy)
+    add_library(TracyLib INTERFACE)
+    target_sources(TracyLib INTERFACE ../tracy/TracyClient.cpp)
+    find_package(Threads REQUIRED)
+    target_link_libraries(TracyLib INTERFACE Threads::Threads ${CMAKE_DL_LIBS})
+    target_compile_definitions(TracyLib INTERFACE -DTRACY_ENABLE=1) # -DTRACY_VERBOSE=1
+    target_include_directories(TracyLib INTERFACE ../tracy)
+    target_link_libraries(imgui INTERFACE TracyLib)
+endif ()
 
 ###############################################################################
 # Backends
@@ -261,6 +282,7 @@ if (IMGUI_IMPL_SDL)
         set(IMGUI_SDL_TARGET SDL2::SDL2)
     endif ()
     if (TARGET ${IMGUI_SDL_TARGET} OR CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+        # SDL platform
         add_library (imgui-sdl INTERFACE)
         target_sources(imgui-sdl INTERFACE
             ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl.h
@@ -270,6 +292,18 @@ if (IMGUI_IMPL_SDL)
         target_link_libraries(imgui-sdl INTERFACE imgui)
         if (TARGET ${IMGUI_SDL_TARGET})
             target_link_libraries(imgui-sdl INTERFACE ${IMGUI_SDL_TARGET})
+        endif ()
+
+        # SDL renderer
+        add_library (imgui-sdlrenderer INTERFACE)
+        target_sources(imgui-sdlrenderer INTERFACE
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer.cpp
+        )
+        target_include_directories(imgui-sdlrenderer SYSTEM INTERFACE ${IMGUI_BACKENDS_DIR})
+        target_link_libraries(imgui-sdlrenderer INTERFACE imgui)
+        if (TARGET ${IMGUI_SDL_TARGET})
+            target_link_libraries(imgui-sdlrenderer INTERFACE ${IMGUI_SDL_TARGET})
         endif ()
     else ()
         message(STATUS "IMGUI_IMPL_SDL set to ON but SDL2 could not be found.")
@@ -455,13 +489,15 @@ if (IMGUI_IMPL_DX12)
 endif ()
 if (IMGUI_IMPL_VULKAN)
     find_package(Vulkan QUIET)
-    if (Vulkan_FOUND)
+    if (CMAKE_CXX_STANDARD EQUAL 98)
+        message(STATUS "IMGUI_IMPL_VULKAN set to ON but Vulkan SDK requires at least C++11.")
+    elseif (NOT Vulkan_FOUND)
+        message(STATUS "IMGUI_IMPL_VULKAN set to ON but Vulkan could not be found.")
+    else ()
         add_library(imgui-vulkan INTERFACE)
         target_sources(imgui-vulkan INTERFACE ${IMGUI_BACKENDS_DIR}/imgui_impl_vulkan.cpp)
         target_link_libraries (imgui-vulkan INTERFACE imgui ${Vulkan_LIBRARIES} OpenGL::GL)
         target_include_directories(imgui-vulkan SYSTEM INTERFACE ${Vulkan_INCLUDE_DIRS} ${IMGUI_BACKENDS_DIR})
-    else ()
-        message(STATUS "IMGUI_IMPL_VULKAN set to ON but Vulkan could not be found.")
     endif ()
 endif ()
 
@@ -564,5 +600,6 @@ if (IMGUI_EXAMPLES)
         IMGUI_EXAMPLE(TARGET example_sdl_opengl2 LINKS imgui-sdl imgui-opengl2)
         IMGUI_EXAMPLE(TARGET example_sdl_opengl3 LINKS imgui-sdl imgui-opengl3)
         IMGUI_EXAMPLE(TARGET example_sdl_vulkan LINKS imgui-sdl imgui-vulkan)
+        IMGUI_EXAMPLE(TARGET example_sdl_sdlrenderer LINKS imgui-sdl imgui-sdlrenderer)
     endif ()
 endif ()
