@@ -62,6 +62,7 @@ option(IMGUI_EXAMPLES "Build ImGui examples" ON)
 option(IMGUI_DEMO "Include the ImGui demo window implementation in library" ON)
 
 option(IMGUI_DISABLE_OBSOLETE_FUNCTIONS "Disable deprecated functions" ON)
+option(IMGUI_DISABLE_OBSOLETE_KEYIO "Disable legacy input handling" ON)
 option(IMGUI_DISABLE_FILE_FUNCTIONS "Disable use of file functions" OFF)
 option(IMGUI_ENABLE_STDLIB_SUPPORT "Enable extra functions taking stdlib types" OFF)
 option(IMGUI_ENABLE_COVERAGE "Enable coverage testing for supported compilers" OFF)
@@ -109,20 +110,6 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 11)
 endif ()
 
-# Warnings.
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wunused-parameter -Wformat $<$<COMPILE_LANGUAGE:CXX>:-pedantic> -Wnarrowing)
-endif ()
-
-# These warnings are overzealous in GCC and only practical to use with Clang.
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wsign-conversion -Wshadow)
-endif ()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
-endif ()
-
 # Helper variables. They allow to use this CMakeLists.txt file while it is in examples or in root directory. You may
 # copy/symlink this file to imgui root directory in order to help IDEs like CLion to recognize headers as part of the
 # project.
@@ -140,17 +127,51 @@ else ()
     set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/../misc)
 endif ()
 
+###############################################################################
+# Warnings
+###############################################################################
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wall -Wextra -Wunused-parameter -Wformat -Wnarrowing -Wno-sign-conversion -Wno-error=declaration-after-statement) # $<$<COMPILE_LANGUAGE:CXX>:-pedantic>
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wnontrivial-memaccess)
+    endif ()
+    if (NOT APPLE)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>)
+    endif ()
+endif ()
+
+# These warnings are overzealous in GCC and only practical to use with Clang.
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wshadow)
+endif ()
+
+# Disable warnings for third party source code. We can disable warnings for tracy, because it's source code is built as
+# a part of our own build system. In case SDL2/GLFW/FreeType are used from a source distribution, we can not modify
+# build flags of those targets from over here and thus they will have a warning spam.
+file (GLOB_RECURSE THIRD_PARTY_SOURCE_FILES ${IMGUI_EXAMPLES_DIR}/libs/* imstb_*.c ../tracy/*.cpp)
+set_source_files_properties(${THIRD_PARTY_SOURCE_FILES} PROPERTIES COMPILE_OPTIONS -w)
+
+#if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
+#endif ()
+
+###############################################################################
+# Main library
+###############################################################################
 # Set up main library. It is created as an INTERFACE library because it allows using different
 # IMGUI_USER_CONFIG defines in different targets of downstream projects.
 file(GLOB IMGUI_SOURCE_FILES ${IMGUI_ROOT_DIR}/*.h ${IMGUI_ROOT_DIR}/*.cpp)
 if (NOT IMGUI_DEMO)
-    list(REMOVE IMGUI_SOURCE_FILES ${IMGUI_ROOT_DIR}/imgui_demo.cpp)
+    list(REMOVE_ITEM IMGUI_SOURCE_FILES ${IMGUI_ROOT_DIR}/imgui_demo.cpp)
 endif ()
 add_library(imgui INTERFACE)
 target_link_libraries(imgui INTERFACE ${CMAKE_DL_LIBS})
 target_sources(imgui INTERFACE ${IMGUI_SOURCE_FILES})
 if (IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
     target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1)
+endif ()
+if (IMGUI_DISABLE_OBSOLETE_KEYIO)
+    target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_OBSOLETE_KEYIO=1)
 endif ()
 if (IMGUI_DISABLE_FILE_FUNCTIONS)
     target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_FILE_FUNCTIONS=1)
@@ -216,11 +237,11 @@ target_sources(imgui-stdlib INTERFACE
 ###############################################################################
 if (IMGUI_ENABLE_TRACY AND EXISTS ${IMGUI_ROOT_DIR}/../tracy)
     add_library(TracyLib INTERFACE)
-    target_sources(TracyLib INTERFACE ../tracy/TracyClient.cpp)
+    target_sources(TracyLib INTERFACE ../tracy/public/TracyClient.cpp)
     find_package(Threads REQUIRED)
     target_link_libraries(TracyLib INTERFACE Threads::Threads ${CMAKE_DL_LIBS})
     target_compile_definitions(TracyLib INTERFACE -DTRACY_ENABLE=1) # -DTRACY_VERBOSE=1
-    target_include_directories(TracyLib INTERFACE ../tracy)
+    target_include_directories(TracyLib INTERFACE ../tracy/public)
     target_link_libraries(imgui INTERFACE TracyLib)
 endif ()
 
@@ -394,7 +415,7 @@ if (IMGUI_IMPL_OPENGL2 OR IMGUI_IMPL_OPENGL3)
     if (NOT TARGET OpenGL::GL)
         add_library(OpenGL::GL INTERFACE IMPORTED)
         target_include_directories(OpenGL::GL INTERFACE ${OPENGL_INCLUDE_DIR})
-        target_link_libraries(OpenGL::GL INTERFACE ${OPENGL_gl_LIBRARY})
+        target_link_libraries(OpenGL::GL INTERFACE ${OPENGL_LIBRARY})
     endif ()
     if (IMGUI_IMPL_OPENGL2)
         add_library(imgui-opengl2 INTERFACE)
@@ -530,6 +551,7 @@ if (IMGUI_EXAMPLES)
             endif ()
         endif ()
     endfunction()
+    IMGUI_EXAMPLE(TARGET example_null LINKS imgui-null)
     if (APPLE)
         # MacOS Metal example
         # FIXME: This sample is still broken.
@@ -574,7 +596,6 @@ if (IMGUI_EXAMPLES)
         IMGUI_EXAMPLE(TARGET example_win32_directx10 LINKS imgui-win32 imgui-dx10)
         IMGUI_EXAMPLE(TARGET example_win32_directx11 LINKS imgui-win32 imgui-dx11)
         IMGUI_EXAMPLE(TARGET example_win32_directx12 LINKS imgui-win32 imgui-dx12)
-        IMGUI_EXAMPLE(TARGET example_null)
     endif ()
     if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
         IMGUI_EXAMPLE(TARGET example_emscripten LINKS imgui-sdl imgui-opengl3)
