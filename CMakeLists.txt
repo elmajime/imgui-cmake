@@ -28,12 +28,12 @@
 #   <..>
 #   # Link Dear ImGui to your application:
 #   #  imgui - a main library target
-#   #  imgui-sdl - a platform backend target
+#   #  imgui-sdl2 - a platform backend target
 #   #  imgui-dx11 - a graphics backend target
-#   target_link_libraries(YourApplication PUBLIC imgui imgui-sdl imgui-dx11)
+#   target_link_libraries(YourApplication PUBLIC imgui imgui-sdl2 imgui-dx11)
 #
 # A list of defined targets:
-#   imgui-sdl: platform backend for Windows/Linux/MacOS/etc using SDL2.
+#   imgui-sdl2: platform backend for Windows/Linux/MacOS/etc using SDL2.
 #   imgui-glfw: platform backend for Windows/Linux/MacOS/etc using GLFW.
 #   imgui-osx: platform backend for MacOS.
 #   imgui-win32: platform backend for Windows.
@@ -305,15 +305,15 @@ if (IMGUI_IMPL_SDL)
     endif ()
     if (TARGET ${IMGUI_SDL_TARGET} OR CMAKE_SYSTEM_NAME STREQUAL Emscripten)
         # SDL platform
-        add_library (imgui-sdl INTERFACE)
-        target_sources(imgui-sdl INTERFACE
-            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl.h
-            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl.cpp
+        add_library (imgui-sdl2 INTERFACE)
+        target_sources(imgui-sdl2 INTERFACE
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl2.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdl2.cpp
         )
-        target_include_directories(imgui-sdl SYSTEM INTERFACE ${IMGUI_BACKENDS_DIR})
-        target_link_libraries(imgui-sdl INTERFACE imgui)
+        target_include_directories(imgui-sdl2 SYSTEM INTERFACE ${IMGUI_BACKENDS_DIR})
+        target_link_libraries(imgui-sdl2 INTERFACE imgui)
         if (TARGET ${IMGUI_SDL_TARGET})
-            target_link_libraries(imgui-sdl INTERFACE ${IMGUI_SDL_TARGET})
+            target_link_libraries(imgui-sdl2 INTERFACE ${IMGUI_SDL_TARGET})
         endif ()
 
         # SDL renderer
@@ -541,11 +541,11 @@ if (IMGUI_EXAMPLES)
         # Resize a target.
         add_executable(${IMGUI_EXAMPLE_TARGET} ${IMGUI_EXAMPLES_DIR}/${IMGUI_EXAMPLE_TARGET}/${IMGUI_EXAMPLE_SOURCE})
         target_link_libraries(${IMGUI_EXAMPLE_TARGET} PRIVATE imgui ${IMGUI_EXAMPLE_LINKS})
-        list(FIND IMGUI_EXAMPLE_LINKS imgui-sdl LINKS_SDL)
+        list(FIND IMGUI_EXAMPLE_LINKS imgui-sdl2 LINKS_SDL)
         if (NOT LINKS_SDL EQUAL -1 AND WIN32)
             get_target_property(SDL_IS_IMPORTED ${IMGUI_SDL_TARGET} IMPORTED)
             if (SDL_IS_IMPORTED)
-                # When program links to imgui-sdl and imported target ${IMGUI_SDL_TARGET} exists - copy SDL dll.
+                # When program links to imgui-sdl2 and imported target ${IMGUI_SDL_TARGET} exists - copy SDL dll.
                 add_custom_command(TARGET ${IMGUI_EXAMPLE_TARGET} POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                             $<TARGET_FILE:${IMGUI_SDL_TARGET}> $<TARGET_FILE_DIR:${IMGUI_EXAMPLE_TARGET}>)
@@ -589,17 +589,17 @@ if (IMGUI_EXAMPLES)
         endif()
         IMGUI_EXAMPLE(TARGET example_apple_opengl2 LINKS imgui-osx imgui-opengl2 SOURCE main.mm)
         IMGUI_EXAMPLE(TARGET example_glfw_metal LINKS imgui-glfw imgui-metal SOURCE main.mm)
-        IMGUI_EXAMPLE(TARGET example_sdl_metal LINKS imgui-sdl imgui-metal SOURCE main.mm)
+        IMGUI_EXAMPLE(TARGET example_sdl2_metal LINKS imgui-sdl2 imgui-metal SOURCE main.mm)
     endif ()
     if (WIN32)
-        IMGUI_EXAMPLE(TARGET example_sdl_directx11 LINKS imgui-sdl imgui-dx11)
+        IMGUI_EXAMPLE(TARGET example_sdl2_directx11 LINKS imgui-sdl2 imgui-dx11)
         IMGUI_EXAMPLE(TARGET example_win32_directx9 LINKS imgui-win32 imgui-dx9)
         IMGUI_EXAMPLE(TARGET example_win32_directx10 LINKS imgui-win32 imgui-dx10)
         IMGUI_EXAMPLE(TARGET example_win32_directx11 LINKS imgui-win32 imgui-dx11)
         IMGUI_EXAMPLE(TARGET example_win32_directx12 LINKS imgui-win32 imgui-dx12)
     endif ()
     if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-        IMGUI_EXAMPLE(TARGET example_emscripten_opengl3 LINKS imgui-sdl imgui-opengl3)
+        IMGUI_EXAMPLE(TARGET example_emscripten_opengl3 LINKS imgui-sdl2 imgui-opengl3)
         set_target_properties(example_emscripten_opengl3 PROPERTIES SUFFIX .html)
         target_compile_options(example_emscripten_opengl3 PUBLIC -sUSE_SDL=2)
         target_link_options(example_emscripten_opengl3 PUBLIC -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sDISABLE_EXCEPTION_CATCHING=1 -sNO_EXIT_RUNTIME=0)
@@ -619,9 +619,9 @@ if (IMGUI_EXAMPLES)
         IMGUI_EXAMPLE(TARGET example_glfw_opengl3 LINKS imgui-glfw imgui-opengl3)
         IMGUI_EXAMPLE(TARGET example_glfw_vulkan LINKS imgui-glfw imgui-vulkan)
         IMGUI_EXAMPLE(TARGET example_glut_opengl2 LINKS imgui-glut imgui-opengl2)
-        IMGUI_EXAMPLE(TARGET example_sdl_opengl2 LINKS imgui-sdl imgui-opengl2)
-        IMGUI_EXAMPLE(TARGET example_sdl_opengl3 LINKS imgui-sdl imgui-opengl3)
-        IMGUI_EXAMPLE(TARGET example_sdl_vulkan LINKS imgui-sdl imgui-vulkan)
-        IMGUI_EXAMPLE(TARGET example_sdl_sdlrenderer LINKS imgui-sdl imgui-sdlrenderer)
+        IMGUI_EXAMPLE(TARGET example_sdl2_opengl2 LINKS imgui-sdl2 imgui-opengl2)
+        IMGUI_EXAMPLE(TARGET example_sdl2_opengl3 LINKS imgui-sdl2 imgui-opengl3)
+        IMGUI_EXAMPLE(TARGET example_sdl2_vulkan LINKS imgui-sdl2 imgui-vulkan)
+        IMGUI_EXAMPLE(TARGET example_sdl2_sdlrenderer LINKS imgui-sdl2 imgui-sdlrenderer)
     endif ()
 endif ()
