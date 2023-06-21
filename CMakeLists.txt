@@ -380,8 +380,8 @@ if (IMGUI_IMPL_GLFW)
             message(FATAL_ERROR "Unsupported platform.")
         endif()
         add_library(glfw INTERFACE IMPORTED)
-        target_link_libraries(glfw INTERFACE libs/glfw/lib-vc2010-${IMGUI_GLFW_PLATFORM_BITS}/glfw3.lib)
-        target_include_directories(glfw INTERFACE libs/glfw/include)
+        target_link_libraries(glfw INTERFACE ${IMGUI_ROOT_DIR}/examples/libs/glfw/lib-vc2010-${IMGUI_GLFW_PLATFORM_BITS}/glfw3.lib)
+        target_include_directories(glfw INTERFACE ${IMGUI_ROOT_DIR}/examples/libs/glfw/include)
     elseif (PkgConfig_FOUND)
         # CMake 3.6 supports IMPORTED_TARGET parameter which creates PkgConfig::glfw target that we can easily link to.
         # TODO: Switch to using IMPORTED_TARGET when CMake minimal version is increased.
