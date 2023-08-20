@@ -117,16 +117,17 @@ endif ()
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui.h)
     # CMakeLists.txt is in root directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
-    set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples)
-    set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends)
-    set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/misc)
+elseif (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h)
+    # CMakeLists.txt is in parent directory.
+    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/imgui)
 else ()
     # CMakeLists.txt is in examples directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
-    set (IMGUI_EXAMPLES_DIR ${CMAKE_CURRENT_LIST_DIR})
-    set (IMGUI_BACKENDS_DIR ${CMAKE_CURRENT_LIST_DIR}/../backends)
-    set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/../misc)
 endif ()
+
+set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples)
+set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends)
+set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/misc)
 
 ###############################################################################
 # Warnings
