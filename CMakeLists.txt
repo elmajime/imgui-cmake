@@ -116,18 +116,18 @@ endif ()
 # project.
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui.h)
     # CMakeLists.txt is in root directory.
-    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE STRING "" FORCE)
 elseif (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h)
     # CMakeLists.txt is in parent directory.
-    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/imgui)
+    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/imgui CACHE STRING "" FORCE)
 else ()
     # CMakeLists.txt is in examples directory.
-    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+    set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/.. CACHE STRING "" FORCE)
 endif ()
 
-set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples)
-set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends)
-set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/misc)
+set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples CACHE STRING "" FORCE)
+set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends CACHE STRING "" FORCE)
+set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/misc CACHE STRING "" FORCE)
 
 ###############################################################################
 # Warnings
