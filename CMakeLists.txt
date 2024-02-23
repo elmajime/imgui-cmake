@@ -46,7 +46,7 @@
 #   imgui-dx10: graphics backend for Windows using DirectX 10 graphics API.
 #   imgui-dx11: graphics backend for Windows using DirectX 11 graphics API.
 #   imgui-dx12: graphics backend for Windows using DirectX 12 graphics API.
-#   imgui-sdlrenderer: graphics backend for platforms supported by SDL.
+#   imgui-sdlrenderer2: graphics backend for platforms supported by SDL.
 #
 cmake_minimum_required (VERSION 3.13)
 project (imgui)
@@ -318,15 +318,15 @@ if (IMGUI_IMPL_SDL)
         endif ()
 
         # SDL renderer
-        add_library (imgui-sdlrenderer INTERFACE)
-        target_sources(imgui-sdlrenderer INTERFACE
-            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer.h
-            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer.cpp
+        add_library (imgui-sdlrenderer2 INTERFACE)
+        target_sources(imgui-sdlrenderer2 INTERFACE
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer2.h
+            ${IMGUI_BACKENDS_DIR}/imgui_impl_sdlrenderer2.cpp
         )
-        target_include_directories(imgui-sdlrenderer SYSTEM INTERFACE ${IMGUI_BACKENDS_DIR})
-        target_link_libraries(imgui-sdlrenderer INTERFACE imgui)
+        target_include_directories(imgui-sdlrenderer2 SYSTEM INTERFACE ${IMGUI_BACKENDS_DIR})
+        target_link_libraries(imgui-sdlrenderer2 INTERFACE imgui)
         if (TARGET ${IMGUI_SDL_TARGET})
-            target_link_libraries(imgui-sdlrenderer INTERFACE ${IMGUI_SDL_TARGET})
+            target_link_libraries(imgui-sdlrenderer2 INTERFACE ${IMGUI_SDL_TARGET})
         endif ()
     else ()
         message(STATUS "IMGUI_IMPL_SDL set to ON but SDL2 could not be found.")
@@ -543,13 +543,16 @@ if (IMGUI_EXAMPLES)
         add_executable(${IMGUI_EXAMPLE_TARGET} ${IMGUI_EXAMPLES_DIR}/${IMGUI_EXAMPLE_TARGET}/${IMGUI_EXAMPLE_SOURCE})
         target_link_libraries(${IMGUI_EXAMPLE_TARGET} PRIVATE imgui ${IMGUI_EXAMPLE_LINKS})
         list(FIND IMGUI_EXAMPLE_LINKS imgui-sdl2 LINKS_SDL)
-        if (NOT LINKS_SDL EQUAL -1 AND WIN32)
-            get_target_property(SDL_IS_IMPORTED ${IMGUI_SDL_TARGET} IMPORTED)
-            if (SDL_IS_IMPORTED)
-                # When program links to imgui-sdl2 and imported target ${IMGUI_SDL_TARGET} exists - copy SDL dll.
-                add_custom_command(TARGET ${IMGUI_EXAMPLE_TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                            $<TARGET_FILE:${IMGUI_SDL_TARGET}> $<TARGET_FILE_DIR:${IMGUI_EXAMPLE_TARGET}>)
+        if (NOT LINKS_SDL EQUAL -1)
+            target_link_libraries(${IMGUI_EXAMPLE_TARGET} PRIVATE SDL2main)
+            if (WIN32)
+                get_target_property(SDL_IS_IMPORTED ${IMGUI_SDL_TARGET} IMPORTED)
+                if (SDL_IS_IMPORTED)
+                    # When program links to imgui-sdl2 and imported target ${IMGUI_SDL_TARGET} exists - copy SDL dll.
+                    add_custom_command(TARGET ${IMGUI_EXAMPLE_TARGET} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                                $<TARGET_FILE:${IMGUI_SDL_TARGET}> $<TARGET_FILE_DIR:${IMGUI_EXAMPLE_TARGET}>)
+                endif ()
             endif ()
         endif ()
     endfunction()
@@ -598,6 +601,7 @@ if (IMGUI_EXAMPLES)
         IMGUI_EXAMPLE(TARGET example_win32_directx10 LINKS imgui-win32 imgui-dx10)
         IMGUI_EXAMPLE(TARGET example_win32_directx11 LINKS imgui-win32 imgui-dx11)
         IMGUI_EXAMPLE(TARGET example_win32_directx12 LINKS imgui-win32 imgui-dx12)
+        IMGUI_EXAMPLE(TARGET example_win32_opengl3 LINKS imgui-win32 imgui-opengl3)
     endif ()
     if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
         IMGUI_EXAMPLE(TARGET example_emscripten_opengl3 LINKS imgui-sdl2 imgui-opengl3)
@@ -623,6 +627,6 @@ if (IMGUI_EXAMPLES)
         IMGUI_EXAMPLE(TARGET example_sdl2_opengl2 LINKS imgui-sdl2 imgui-opengl2)
         IMGUI_EXAMPLE(TARGET example_sdl2_opengl3 LINKS imgui-sdl2 imgui-opengl3)
         IMGUI_EXAMPLE(TARGET example_sdl2_vulkan LINKS imgui-sdl2 imgui-vulkan)
-        IMGUI_EXAMPLE(TARGET example_sdl2_sdlrenderer LINKS imgui-sdl2 imgui-sdlrenderer)
+        IMGUI_EXAMPLE(TARGET example_sdl2_sdlrenderer2 LINKS imgui-sdl2 imgui-sdlrenderer2)
     endif ()
 endif ()
